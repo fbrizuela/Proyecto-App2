@@ -8,23 +8,31 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Web.Helpers;
 using System.Web.Mvc;
+using FireSharp.Config;
+using FireSharp.Interfaces;
+using System.Configuration;
+using App.Models.ViewModels;
+using System.Net;
+using System.IO;
+using System.Web.Script.Serialization;
 
 namespace App.Controllers
 {
     public class ControlArduinoController : Controller
     {
-        //ParaIntranet
-        //public string mvcMainPagePath = "http://192.168.0.13/";//ruta para usar cuando s publica
-        //public string serviceArduinoPath = "http://192.168.0.13:70/";//ruta para usar cuando s publica
-
         //ParaVisualStudio
         //public string mvcMainPagePath = "https://localhost:44354/";//ruta de debug para prebas
-        //public string serviceArduinoPath = "https://localhost:44324/";//ruta de debug para prebas
 
-        //ParaLocalhost
-        public string mvcMainPagePath = "http://localhost/";//ruta de debug para prebas
-        public string serviceArduinoPath = "http://localhost:8010/";//ruta de debug para prebas
+        //Github
+        public string mvcMainPagePath = "https://fbrizuela.github.io/";
 
+        //FireBase
+        IFirebaseConfig config = new FirebaseConfig
+        {
+            AuthSecret = ConfigurationManager.AppSettings["AuthSecret"],
+            BasePath = ConfigurationManager.AppSettings["BasePath"]
+        };                                                                          
+        IFirebaseClient clientfb;
 
         // GET: Led
         [HttpGet]
@@ -37,37 +45,50 @@ namespace App.Controllers
         [HttpPost]
         public ActionResult ModificarLed(NotificationViewModel notification)
         {
-
-            using (var client = new HttpClient())
+            try
             {
-                client.BaseAddress = new Uri($"{serviceArduinoPath}api/Notification");
-                var postJob = client.PostAsJsonAsync<NotificationViewModel>("notification", notification);
-                postJob.Wait();
+                clientfb = new FireSharp.FirebaseClient(config);
 
-                var postResult = postJob.Result;
-                if (postResult.IsSuccessStatusCode)
-                    return RedirectToAction("Index");
+                var resUpdate = clientfb.Update(@"Notifications/" + "1", new {
+                                                                                Id = notification.Id,
+                                                                                R = notification.R,
+                                                                                G = notification.G,
+                                                                                B = notification.B,
+                                                                                Cargado = 0
+                                                                            });
             }
-              
+            catch (Exception ex)
+            {
+
+                return RedirectToAction("Index");
+            }
+
             return View("Index");
         }
 
         [HttpPost]
         public ActionResult SetearRele(NotificationViewModel notification)
         {
-
-            using (var client = new HttpClient())
+            try
             {
-                client.BaseAddress = new Uri($"{serviceArduinoPath}api/Notification");
-                var postJob = client.PostAsJsonAsync<NotificationViewModel>("notification/Rele", notification);
-                postJob.Wait();
+                clientfb = new FireSharp.FirebaseClient(config);
 
-                var postResult = postJob.Result;
-                if (postResult.IsSuccessStatusCode)
-                    return RedirectToAction("Index");
+                var resUpdate = clientfb.Update(@"Notifications/" + "1", new
+                {
+                    Id = notification.Id,
+                    R = notification.R,
+                    G = notification.G,
+                    B = notification.B,
+                    Cargado = 0
+                });
+            }
+            catch (Exception ex)
+            {
+
+                return RedirectToAction("Index");
             }
 
-            return View("Index");
+            return RedirectToAction("Index");
         }
 
         [HttpPost]
@@ -78,5 +99,7 @@ namespace App.Controllers
 
             
         }
+
+       
     }
 }
